@@ -9,7 +9,7 @@ public partial class AttackArea : Area2D
     {
         if (body is Enemy enemy)
         {
-            enemy.TakeDamage(Damage);
+            //enemy.TakeDamage(Damage);
         }
     }
 

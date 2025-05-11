@@ -3,84 +3,107 @@ using System;
 
 public partial class Enemy : CharacterBody2D
 {
-	[Export] public int Speed = 50;
-	[Export] public float PatrolDistance = 100f;
-	[Export] public int MaxHealth = 40;
-	[Export] public float IdleTime = 1.5f;
-	[Export] public float StopChasingDistance = 300f;
-	private enum State { Walking, Idle, Dying, Chasing }
-	private State currentState = State.Walking;
-	private int currentHealth;
-	private Vector2 startPos;
-	private int direction = -1;
-	private float idleTimer = 0f;
-	private AnimatedSprite2D sprite;
-	private bool isChasing = false;
-	private Node2D player;
+	[Export] public int MaxHealth = 3;
+	[Export] public float PatrolSpeed = 50f;
+	[Export] public float ChaseSpeed = 50f;
+	[Export] public float PatrolDistance = 75f;
+	[Export] public float ChaseDuration = 5f;
+	[Export] public float AttackCooldown = 1f;
 
+	private int currentHealth;
+	private bool isDead = false;
+	private bool isAttacking = false;
+	private bool isChasing = false;
+	private bool isPatrolling = true;
+	private bool playerInRange = false;
+	private bool canAttack = true;
+	private bool movingRight = false;
+	private bool isPatrolWaiting = false;
+
+	private Vector2 patrolOrigin;
+	private Node2D player;
+	private AnimationPlayer animationPlayer;
+	private Timer deathTimer;
 
 	public override void _Ready()
 	{
 		currentHealth = MaxHealth;
-		startPos = GlobalPosition;
+		patrolOrigin = GlobalPosition;
 
-		sprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-		sprite.Play("move");
+		GetNode<Area2D>("AttackArea").BodyEntered += (_) => playerInRange = true;
+		GetNode<Area2D>("AttackArea").BodyExited += (_) => playerInRange = false;
 
-        var detectionArea = GetNode<Area2D>("DetectionArea");
+		GetNode<Timer>("AttackArea/AttackCooldown").Timeout += () => canAttack = true;
+
+		var detectionArea = GetNode<Area2D>("DetectionArea");
 		detectionArea.BodyEntered += OnPlayerDetected;
-        detectionArea.BodyExited += OnPlayerExited;
+		detectionArea.BodyExited += OnPlayerExited;
+
+		deathTimer = GetNode<Timer>("DeathTimer");
+		deathTimer.Timeout += QueueFree;
+
+		animationPlayer = GetNode<AnimationPlayer>("AnimationPlayer");
+		animationPlayer.AnimationFinished += OnAnimationFinished;
+		animationPlayer.Play("idle");
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (currentState == State.Dying)
+		if (isDead) return;
+
+		if (playerInRange && canAttack && !isAttacking)
 		{
-			// Handle dying state
+			StartAttack();
 			return;
 		}
 
-		if (currentState == State.Chasing && IsInstanceValid(player))
-        {
-            Vector2 direction = (player.GlobalPosition - GlobalPosition).Normalized();
-            Velocity = direction * Speed;
-            MoveAndSlide();
-
-            // Flip sprite based on direction
-            sprite.FlipH = Velocity.X < 0;
-            sprite.Play("walk");
-        }
-
-		if (currentState == State.Idle)
+		if (isAttacking)
 		{
-			idleTimer -= (float)delta;
-			if (idleTimer <= 0)
-			{
-				// Resume walking
-				currentState = State.Walking;
-				direction *= -1;
-				FlipSprite();
-				sprite.Play("move");
-			}
-			return;
-		}
-
-		Velocity = new Vector2(direction * Speed, Velocity.Y);
-		MoveAndSlide();
-
-		if (Mathf.Abs(GlobalPosition.X - startPos.X) > PatrolDistance && currentState != State.Dying)
-		{
-			currentState = State.Idle;
-			idleTimer = IdleTime;
 			Velocity = Vector2.Zero;
-			sprite.Play("idle");
+			return;
+		}
+
+		if (isPatrolling)
+		{
+			Patrol();
+		}
+
+		if (isChasing)
+		{
+			ChasePlayer();
 		}
 	}
 
-	public void TakeDamage(int damage)
+	public void ApplyDamageToPlayer()
 	{
-		sprite.Play("take_damage");
-		currentHealth -= damage;
+		if (playerInRange && IsInstanceValid(player))
+		{
+			var playerScript = player as Player;
+			playerScript?.TakeDamage(1);
+		}
+	}
+
+	public void OnAnimationFinished(StringName animationName)
+	{
+		if (animationName == "attack")
+		{
+			isAttacking = false;
+		}
+	}
+
+	public void TakeDamage(int amount)
+	{
+		if (isDead) return;
+
+		currentHealth -= amount;
+
+		if (isAttacking)
+		{
+			isAttacking = false;
+			DisableAttackHitbox();
+		}
+
+		animationPlayer.Play("take_damage");
 		if (currentHealth <= 0)
 		{
 			Die();
@@ -89,41 +112,107 @@ public partial class Enemy : CharacterBody2D
 
 	private void Die()
 	{
-		var collider = GetNode<CollisionShape2D>("CollisionShape2D");
-		collider.SetDeferred("disabled", true);
-		currentState = State.Dying;
+		isDead = true;
 		Velocity = Vector2.Zero;
-		sprite.Stop();
-		sprite.Play("die");
-		var timer = new Timer();
-		timer.WaitTime = 3.0f; // Set the delay time in seconds
-		timer.OneShot = true; // Ensure the timer only runs once
-		timer.Timeout += () => QueueFree(); // Connect the timeout signal to remove the enemy
-		AddChild(timer); // Add the timer to the scene
-		timer.Start(); // Start the timer
+		animationPlayer.Play("die");
+		deathTimer.Start();
 	}
 
-	private void FlipSprite()
+	private void StartAttack()
 	{
-		var sprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-		sprite.FlipH = direction > -1;
+		isAttacking = true;
+		canAttack = false;
+		Velocity = Vector2.Zero;
+		animationPlayer.Play("attack");
+		GetNode<Timer>("AttackArea/AttackCooldown").Start();
+	}
+
+	private void ChasePlayer()
+	{
+		if (player == null || !IsInstanceValid(player) || playerInRange)
+		{
+			return;
+		}
+
+		var direction = (player.GlobalPosition - GlobalPosition).Normalized();
+		direction.Y = 0;
+		Velocity = direction * ChaseSpeed;
+		MoveAndSlide();
+		animationPlayer.Play("move");
+		FlipSprite(direction.X);
+		movingRight = direction.X > 0;
+		patrolOrigin = GlobalPosition;
+	}
+
+	private void Patrol()
+	{
+		if (isPatrolWaiting)
+		{
+			return;
+		}
+
+		Vector2 velocity = Velocity;
+		animationPlayer.Play("move");
+
+		if (movingRight)
+		{
+			velocity.X = PatrolSpeed;
+			FlipSprite(1);
+		}
+		else
+		{
+			velocity.X = -PatrolSpeed;
+			FlipSprite(-1);
+		}
+
+		Velocity = velocity;
+		MoveAndSlide();
+
+		if (GlobalPosition.X >= patrolOrigin.X + PatrolDistance)
+		{
+			movingRight = false;
+			isPatrolWaiting = true;
+			animationPlayer.Play("idle");
+			GetTree().CreateTimer(2f).Timeout += () => isPatrolWaiting = false;
+		}
+		else if (GlobalPosition.X <= patrolOrigin.X - PatrolDistance)
+		{
+			movingRight = true;
+			isPatrolWaiting = true;
+			animationPlayer.Play("idle");
+			GetTree().CreateTimer(2f).Timeout += () => isPatrolWaiting = false;
+		}
+	}
+
+	private void FlipSprite(float xDirection)
+	{
+		var sprite = GetNode<Sprite2D>("Sprite2D");
+		sprite.FlipH = xDirection > 0;
 	}
 
 	private void OnPlayerDetected(Node2D body)
-    {
-        if (body.Name == "player") // or use `body is Player`
-        {
-            player = body;
-            currentState = State.Chasing;
+	{
+		if (body is Player)
+		{
+			player = body;
+			isChasing = true;
+			isPatrolling = false;
 		}
-    }
+	}
 
-    private void OnPlayerExited(Node2D body)
-    {
-        if (body == player)
-        {
-            currentState = State.Idle;
-            player = null;
-        }
-    }
+	private void OnPlayerExited(Node2D body)
+	{
+		if (body == player)
+		{
+			player = null;
+			isChasing = false;
+			isPatrolling = true;
+		}
+	}
+
+	private void DisableAttackHitbox()
+	{
+		var hitbox = GetNode<CollisionShape2D>("AttackArea/Hurtbox");
+		hitbox.SetDeferred("disabled", true);
+	}
 }

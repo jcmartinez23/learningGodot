@@ -6,12 +6,16 @@ public partial class Player : CharacterBody2D
 	[Export] public float Speed = 260.0f;
 	[Export] public float JumpVelocity = -400.0f;
 	[Export] public float Gravity = 850.0f;
+	[Export] public int MaxHealth = 3;
 
 	private AnimatedSprite2D sprite;
 	private bool isAttacking = false;
+	private bool isBlocking = false;
+	private int currentHealth;
 	
 	public override void _Ready()
 	{
+		currentHealth = MaxHealth;
 		sprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
 
 		// Connect animation finished signal to detect when attack ends
@@ -42,6 +46,16 @@ public partial class Player : CharacterBody2D
 		float direction = 0;
 		if (Input.IsActionPressed("ui_right")) direction += 1;
 		if (Input.IsActionPressed("ui_left")) direction -= 1;
+
+		if (Input.IsActionPressed("block")) 
+		{
+			isBlocking = true;
+			sprite.Play("block");
+			Velocity = Vector2.Zero;
+			return;
+		}
+
+		isBlocking = false;
 
 		velocity.X = direction * Speed;
 
@@ -83,6 +97,19 @@ public partial class Player : CharacterBody2D
 		}
 	}
 
+	public void TakeDamage(int damage)
+	{
+		if(!isBlocking) 
+		{
+			currentHealth -= damage;
+		}
+
+		if (currentHealth <= 0)
+		{
+			GD.Print("Player is dead!");
+		}
+	}
+
 	private void OnAnimationFinished()
 	{
 		if (sprite.Animation == "attack")
@@ -93,9 +120,7 @@ public partial class Player : CharacterBody2D
 	{
 		if (body.IsInGroup("enemy"))
 		{
-			GD.Print("Hit enemy: " + body.Name);
-			// You could also call a method on the enemy, like:
-			// ((Enemy)body).TakeDamage(1);
+			((Enemy)body).TakeDamage(1);
 		}
 	}
 
