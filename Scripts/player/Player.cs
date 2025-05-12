@@ -3,139 +3,84 @@ using System;
 
 public partial class Player : CharacterBody2D
 {
-	[Export] public float Speed = 260.0f;
-	[Export] public float JumpVelocity = -400.0f;
-	[Export] public float Gravity = 850.0f;
-	[Export] public int MaxHealth = 3;
+	[Export] public int Speed = 200;
+    [Export] public int JumpForce = -420;
+    [Export] public int Gravity = 900;
 
-	private AnimatedSprite2D sprite;
+	private AnimationPlayer animationPlayer;
+	private Sprite2D sprite;
 	private bool isAttacking = false;
+    private bool isDead = false;
 	private bool isBlocking = false;
-	private int currentHealth;
-	
+
 	public override void _Ready()
 	{
-		currentHealth = MaxHealth;
-		sprite = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
-
-		// Connect animation finished signal to detect when attack ends
-		sprite.AnimationFinished += OnAnimationFinished;
-		GetNode<Area2D>("AttackPivot/AttackArea").BodyEntered += OnAttackHit;
+		animationPlayer = GetNode<AnimationPlayer>("AnimationPlayer");
+		animationPlayer.AnimationFinished += OnAnimationFinished;
+		sprite = GetNode<Sprite2D>("Sprite2D");
+		animationPlayer.Play("idle");
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
-		Vector2 velocity = Velocity;
+		if (isDead) return;
+
+		var velocity = Velocity;
 
 		// Gravity
-		if (!IsOnFloor())
-			velocity.Y += Gravity * (float)delta;
+        if (!IsOnFloor())
+            velocity.Y += Gravity * (float)delta;
 
-		// Handle attack input
-		if (isAttacking && IsOnFloor())
-		{
-			// Stop movement while attacking
-			velocity.X = 0;
-			Velocity = velocity;
-			MoveAndSlide();
-			return; // Skip further movement logic
-		}
-
-
-		// Input
-		float direction = 0;
-		if (Input.IsActionPressed("ui_right")) direction += 1;
-		if (Input.IsActionPressed("ui_left")) direction -= 1;
-
-		if (Input.IsActionPressed("block")) 
-		{
-			isBlocking = true;
-			sprite.Play("block");
-			Velocity = Vector2.Zero;
-			return;
-		}
-
-		isBlocking = false;
-
-		velocity.X = direction * Speed;
-
-		// Jump
-		if (IsOnFloor() && Input.IsActionJustPressed("ui_up"))
-			velocity.Y = JumpVelocity;
-
-		Velocity = velocity;
-		MoveAndSlide();
+		float input = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
+        velocity.X = isAttacking ? 0 : input * Speed;
 
 		// Flip sprite
-		if (direction != 0) 
-		{
-			// Assuming `direction.X` controls left/right movement
-			bool facingLeft = direction < 0;
+        if (input != 0) 
+            sprite.FlipH = input < 0;
 
-			// Flip the sprite
-			sprite.FlipH = facingLeft;
-			var attackPivot = GetNode<Node2D>("AttackPivot");
-			attackPivot.Scale = new Vector2(direction < 0 ? -1 : 1, 1);
-		}
+		// Jump
+        if (Input.IsActionJustPressed("jump") && IsOnFloor() && !isAttacking)
+        {
+            velocity.Y = JumpForce;
+            animationPlayer.Play("jump");
+        }
 
-		// Handle attack input
-		if (!isAttacking && Input.IsActionJustPressed("attack"))
-		{
-			StartAttack();
-			return; // Don't let movement animations override attack
-		}
+		// Attack
+        if (Input.IsActionJustPressed("attack") && !isAttacking)
+        {
+            StartAttack();
+        }
 
-		// Animation logic
-		if (!isAttacking)
-		{
-			if (!IsOnFloor())
-				sprite.Play("jump");
-			else if (direction != 0)
-				sprite.Play("move");
-			else
-				sprite.Play("idle");
-		}
+	    // Play animations
+        if (!isAttacking)
+        {
+            if (!IsOnFloor())
+            {
+                animationPlayer.Play("jump");
+            }
+            else if (input != 0)
+            {
+                animationPlayer.Play("run");
+            }
+            else
+            {
+                animationPlayer.Play("idle");
+            }
+        }
+
+        Velocity = velocity;
+        MoveAndSlide();
 	}
 
-	public void TakeDamage(int damage)
-	{
-		if(!isBlocking) 
-		{
-			currentHealth -= damage;
-		}
+	 private void StartAttack()
+    {
+        isAttacking = true;
+        animationPlayer.Play("attack");
+    }
 
-		if (currentHealth <= 0)
-		{
-			GD.Print("Player is dead!");
-		}
-	}
-
-	private void OnAnimationFinished()
-	{
-		if (sprite.Animation == "attack")
-			isAttacking = false;
-	}
-
-	private void OnAttackHit(Node body)
-	{
-		if (body.IsInGroup("enemy"))
-		{
-			((Enemy)body).TakeDamage(1);
-		}
-	}
-
-	private async void StartAttack()
-	{
-		isAttacking = true;
-		sprite.Play("attack");
-
-		var hitbox = GetNode<CollisionShape2D>("AttackPivot/AttackArea/CollisionShape2DAttack");
-		await ToSignal(GetTree().CreateTimer(0.1f), "timeout");
-		hitbox.Disabled = false;
-
-		// Wait for a short moment (adjust to match your animation timing)
-		await ToSignal(GetTree().CreateTimer(0.4f), "timeout");
-
-		hitbox.Disabled = true;
-	}
+	private void OnAnimationFinished(StringName animName)
+    {
+        if (animName == "attack")
+            isAttacking = false;
+    }
 }

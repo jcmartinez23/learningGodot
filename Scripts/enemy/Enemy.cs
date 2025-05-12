@@ -79,7 +79,7 @@ public partial class Enemy : CharacterBody2D
 		if (playerInRange && IsInstanceValid(player))
 		{
 			var playerScript = player as Player;
-			playerScript?.TakeDamage(1);
+			//playerScript?.TakeDamage(1);
 		}
 	}
 
