@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dni6a81cgtkg2"]
 
-[ext_resource type="Script" uid="uid://ce2qet23ckgri" path="res://addons/anim_sheet/sprite_sheet_animator.gd" id="1_mseq5"]
+[ext_resource type="Script" uid="uid://0bde4p0junho" path="res://addons/anim_sheet/sprite_sheet_animator.gd" id="1_mseq5"]
 
 [node name="SpriteSheetAnimatorPanel" type="Control"]
 layout_mode = 3

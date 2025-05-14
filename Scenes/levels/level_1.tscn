@@ -1,14 +1,14 @@
 [gd_scene load_steps=36 format=4 uid="uid://clgh1ktyvojpr"]
 
 [ext_resource type="Texture2D" uid="uid://jyhvbs157fog" path="res://Assets/Backgroundhf.png" id="1_lhv83"]
-[ext_resource type="Script" path="res://Scripts/player/Player.cs" id="1_tun2o"]
+[ext_resource type="Script" uid="uid://c8u1nen11wes" path="res://Scripts/player/Player.cs" id="1_tun2o"]
 [ext_resource type="Texture2D" uid="uid://b54k4q8l4xq4y" path="res://Assets/treepack.png" id="2_1e8hl"]
 [ext_resource type="Texture2D" uid="uid://tjgjr4tyuj44" path="res://Assets/platformerPack_industrial_tilesheet edit 1.png" id="3_gjdcl"]
 [ext_resource type="Texture2D" uid="uid://dvd0iiskx6i1l" path="res://Assets/knightfullsprite.png" id="5_7fh86"]
 [ext_resource type="Texture2D" uid="uid://bkcp2kk3bapjs" path="res://Assets/tile1.png" id="5_42bdu"]
 [ext_resource type="Texture2D" uid="uid://776g3pawm6oq" path="res://Assets/halftile1.png" id="7_ce4xk"]
-[ext_resource type="Script" path="res://Scripts/player/AttackArea.cs" id="8_ieuu4"]
-[ext_resource type="Script" path="res://Scripts/enemy/Enemy.cs" id="11_8fmrj"]
+[ext_resource type="Script" uid="uid://cslcq5q135dmk" path="res://Scripts/player/AttackArea.cs" id="8_ieuu4"]
+[ext_resource type="Script" uid="uid://x575w06qx1ub" path="res://Scripts/enemy/Enemy.cs" id="11_8fmrj"]
 [ext_resource type="Texture2D" uid="uid://cvix2idbi7hpm" path="res://Assets/TX Tileset Ground.png" id="12_ydpao"]
 [ext_resource type="Texture2D" uid="uid://bgsby75yh6vx2" path="res://Assets/Mushroom-Attack-0.png" id="14_46pks"]
 
@@ -33,6 +33,22 @@ tracks/0/keys = {
 "values": [0]
 }
 
+[sub_resource type="Animation" id="Animation_kv24c"]
+resource_name = "attack"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [48, 53]
+}
+
 [sub_resource type="Animation" id="Animation_f31f3"]
 resource_name = "idle"
 loop_mode = 2
@@ -47,6 +63,21 @@ tracks/0/keys = {
 "transitions": PackedFloat32Array(1, 1),
 "update": 0,
 "values": [36, 41]
+}
+
+[sub_resource type="Animation" id="Animation_e4rg3"]
+resource_name = "jump"
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Sprite2D:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [60, 64]
 }
 
 [sub_resource type="Animation" id="Animation_t0dwe"]
@@ -65,44 +96,13 @@ tracks/0/keys = {
 "values": [12, 19]
 }
 
-[sub_resource type="Animation" id="Animation_e4rg3"]
-resource_name = "jump"
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 1),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [60, 64]
-}
-
-[sub_resource type="Animation" id="Animation_kv24c"]
-resource_name = "attack"
-length = 0.5
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("Sprite2D:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.5),
-"transitions": PackedFloat32Array(1, 1),
-"update": 0,
-"values": [48, 53]
-}
-
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_2jsu7"]
 _data = {
-"RESET": SubResource("Animation_e1urd"),
-"attack": SubResource("Animation_kv24c"),
-"idle": SubResource("Animation_f31f3"),
-"jump": SubResource("Animation_e4rg3"),
-"run": SubResource("Animation_t0dwe")
+&"RESET": SubResource("Animation_e1urd"),
+&"attack": SubResource("Animation_kv24c"),
+&"idle": SubResource("Animation_f31f3"),
+&"jump": SubResource("Animation_e4rg3"),
+&"run": SubResource("Animation_t0dwe")
 }
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_3kjtd"]
@@ -619,34 +619,22 @@ length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath(".:position")
+tracks/0/path = NodePath("AttackArea/Hurtbox:disabled")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(608, 356)]
+"update": 1,
+"values": [true]
 }
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("AttackArea/Hurtbox:disabled")
+tracks/1/path = NodePath("Sprite2D:frame")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 1,
-"values": [true]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("Sprite2D:frame")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
@@ -761,28 +749,29 @@ tracks/0/keys = {
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_4le77"]
 _data = {
-"RESET": SubResource("Animation_smi72"),
-"attack": SubResource("Animation_lufr0"),
-"die": SubResource("Animation_r4q0o"),
-"idle": SubResource("Animation_r151d"),
-"move": SubResource("Animation_iideu"),
-"take_damage": SubResource("Animation_g7n7m")
+&"RESET": SubResource("Animation_smi72"),
+&"attack": SubResource("Animation_lufr0"),
+&"die": SubResource("Animation_r4q0o"),
+&"idle": SubResource("Animation_r151d"),
+&"move": SubResource("Animation_iideu"),
+&"take_damage": SubResource("Animation_g7n7m")
 }
 
 [node name="level_1" type="Node2D"]
-position = Vector2(-85, -95)
 
 [node name="Background" type="Sprite2D" parent="."]
-position = Vector2(412, 256)
+position = Vector2(324.5, 169.5)
 scale = Vector2(1.36875, 1.25368)
 texture = ExtResource("1_lhv83")
+metadata/_edit_lock_ = true
 
 [node name="Tree" type="Sprite2D" parent="."]
-position = Vector2(208, 313)
+position = Vector2(120.5, 226.5)
 texture = ExtResource("2_1e8hl")
+metadata/_edit_lock_ = true
 
 [node name="player" type="CharacterBody2D" parent="." groups=["player"]]
-position = Vector2(117, 349)
+position = Vector2(29.5, 262.5)
 scale = Vector2(1.7, 1.7)
 collision_layer = 9
 collision_mask = 9
@@ -790,7 +779,6 @@ script = ExtResource("1_tun2o")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="player"]
 position = Vector2(-1.90735e-06, 3.23529)
-scale = Vector2(1, 1)
 shape = SubResource("RectangleShape2D_wqdhb")
 
 [node name="AttackPivot" type="Node2D" parent="player"]
@@ -807,21 +795,23 @@ disabled = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="player"]
 libraries = {
-"": SubResource("AnimationLibrary_2jsu7")
+&"": SubResource("AnimationLibrary_2jsu7")
 }
 
 [node name="Sprite2D" type="Sprite2D" parent="player"]
+z_index = 1
 texture = ExtResource("5_7fh86")
 hframes = 12
 vframes = 7
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
-position = Vector2(185, 222)
+position = Vector2(97.5, 135.5)
 tile_map_data = PackedByteArray("AAD8/wUAAwAAAAAAAAD9/wUAAwABAAAAAAD+/wUAAwABAAAAAAD//wUAAwABAAAAAAAAAAUAAwABAAAAAAABAAUAAwABAAAAAAACAAUAAwABAAAAAAADAAUAAwABAAAAAAAEAAUAAwABAAAAAAAFAAUAAwABAAAAAAAGAAUAAwABAAAAAAAHAAUAAwABAAAAAAAIAAUAAwABAAAAAAAJAAUAAwABAAAAAAAKAAUAAwABAAAAAAALAAUAAwABAAAAAAAMAAUAAwABAAAAAAANAAUAAwABAAAAAAAOAAUAAwABAAAAAAAPAAUAAwABAAAAAAAQAAUAAwABAAAAAAARAAUAAwABAAAAAAAEAAIAAwABAAAAAAAFAAIAAwABAAAAAAAGAAIAAwACAAAAAAADAAIAAwAAAAAAAAA=")
 tile_set = SubResource("TileSet_37mrx")
 
 [node name="Enemy" type="CharacterBody2D" parent="." groups=["enemy"]]
-position = Vector2(608, 356)
+z_index = 1
+position = Vector2(599, 268)
 scale = Vector2(4, 4)
 collision_layer = 5
 collision_mask = 5
@@ -863,7 +853,7 @@ disabled = true
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="Enemy"]
 libraries = {
-"": SubResource("AnimationLibrary_4le77")
+&"": SubResource("AnimationLibrary_4le77")
 }
 
 [node name="DeathTimer" type="Timer" parent="Enemy"]
